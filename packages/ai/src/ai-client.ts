@@ -4,10 +4,13 @@ import { LocalOpenAICompatibleProvider } from "./providers/local-openai-compatib
 import { OllamaProvider } from "./providers/ollama";
 import { RuleBasedProvider } from "./providers/rule-based";
 import { DisabledAiProvider } from "./providers/disabled";
+import { OpenAIProvider } from "./providers/openai";
+import { AnthropicProvider } from "./providers/anthropic";
+import { GeminiProvider } from "./providers/gemini";
 import type { AiProvider, GenerateTextResult } from "./types";
 
 export function createAiProvider(config: AppConfig = getConfig()): AiProvider {
-  if (config.AI_PROVIDER === "disabled" || !config.LOCAL_LLM_ENABLED) {
+  if (config.AI_PROVIDER === "disabled") {
     return new DisabledAiProvider();
   }
 
@@ -15,7 +18,20 @@ export function createAiProvider(config: AppConfig = getConfig()): AiProvider {
     return new RuleBasedProvider();
   }
 
+  if (config.AI_PROVIDER === "openai") {
+    return new OpenAIProvider(config.OPENAI_API_KEY, config.OPENAI_MODEL);
+  }
+
+  if (config.AI_PROVIDER === "anthropic") {
+    return new AnthropicProvider(config.ANTHROPIC_API_KEY, config.ANTHROPIC_MODEL);
+  }
+
+  if (config.AI_PROVIDER === "gemini") {
+    return new GeminiProvider(config.GEMINI_API_KEY, config.GEMINI_MODEL);
+  }
+
   if (config.AI_PROVIDER === "local") {
+    if (!config.LOCAL_LLM_ENABLED) return new DisabledAiProvider();
     const options = {
       baseUrl: config.LOCAL_LLM_BASE_URL,
       model: config.LOCAL_LLM_MODEL,

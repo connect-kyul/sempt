@@ -1,10 +1,18 @@
-export interface DiscordEmbeddedSdkLike {
-  ready(): Promise<void>;
-}
+import { DiscordSDK } from "@discord/embedded-app-sdk";
 
-export async function getDiscordSdk(): Promise<DiscordEmbeddedSdkLike | null> {
+let sdk: DiscordSDK | null | undefined;
+
+export async function getDiscordSdk(): Promise<DiscordSDK | null> {
   if (typeof window === "undefined") return null;
-  return null;
+  if (sdk !== undefined) return sdk;
+  const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
+  if (!clientId) {
+    sdk = null;
+    return sdk;
+  }
+  sdk = new DiscordSDK(clientId);
+  await sdk.ready();
+  return sdk;
 }
 
 export function isEmbeddedApp(): boolean {

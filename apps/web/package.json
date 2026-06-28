@@ -5,30 +5,39 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "worker:reports": "tsx scripts/report-worker.ts",
     "build": "next build",
     "lint": "next lint || tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@discord/embedded-app-sdk": "^2.5.0",
     "@sempt/ai": "workspace:*",
     "@sempt/config": "workspace:*",
     "@sempt/database": "workspace:*",
     "@sempt/shared": "workspace:*",
+    "bullmq": "^5.79.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ioredis": "^5.11.1",
     "lucide-react": "^0.468.0",
     "next": "^15.1.4",
+    "next-auth": "^4.24.14",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
 }

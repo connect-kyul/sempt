@@ -148,6 +148,20 @@ client.on("interactionCreate", async (interaction) => {
 
   if (subcommand === "report") {
     await interaction.deferReply();
+    const periodStart = new Date();
+    periodStart.setHours(0, 0, 0, 0);
+    const day = periodStart.getDay();
+    periodStart.setDate(periodStart.getDate() - (day === 0 ? 6 : day - 1));
+    const periodEnd = new Date(periodStart);
+    periodEnd.setDate(periodEnd.getDate() + 7);
+    const cacheKey = `WEEKLY:${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, "0")}-${String(periodStart.getDate()).padStart(2, "0")}`;
+    const cached = await prisma.report.findUnique({
+      where: { guildId_cacheKey: { guildId: interaction.guild.id, cacheKey } }
+    });
+    if (cached) {
+      await interaction.editReply(`**Sempt 주간 리포트**\n${cached.aiSummary ?? cached.summary}\n\nAI Provider: ${cached.aiProvider ?? "rule-based"} (cache)`);
+      return;
+    }
     const input = await buildGrowthReportInput(interaction.guild.id);
     const baseReport = generateWeeklyReport(input);
     const aiResult = await generateGrowthReportText(input);
@@ -155,8 +169,9 @@ client.on("interactionCreate", async (interaction) => {
       data: {
         guildId: interaction.guild.id,
         period: "WEEKLY",
-        periodStart: new Date(Date.now() - 7 * 86400000),
-        periodEnd: new Date(),
+        periodStart,
+        periodEnd,
+        cacheKey,
         healthScore: input.healthScore,
         summary: baseReport.summary,
         risks: baseReport.risks,

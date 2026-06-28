@@ -8,16 +8,20 @@
     "dev": "pnpm --parallel --filter @sempt/bot --filter @sempt/web dev",
     "dev:bot": "pnpm --filter @sempt/bot dev",
     "dev:web": "pnpm --filter @sempt/web dev",
+    "worker:reports": "pnpm --filter @sempt/web worker:reports",
     "db:push": "pnpm --filter @sempt/database db:push",
     "db:migrate": "pnpm --filter @sempt/database db:migrate",
     "db:studio": "pnpm --filter @sempt/database db:studio",
     "lint": "pnpm --recursive lint",
     "typecheck": "pnpm --recursive typecheck",
+    "test": "vitest run",
     "build": "pnpm --recursive build"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
+    "@vitest/coverage-v8": "^4.1.9",
     "prettier": "^3.4.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.9"
   }
 }

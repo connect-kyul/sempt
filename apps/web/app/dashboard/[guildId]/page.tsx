@@ -1,16 +1,28 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AlertTriangle, BarChart3, Users, type LucideIcon } from "lucide-react";
+import { canManageGuild } from "@/auth";
+import { getPrisma } from "@sempt/database";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { demoChannels } from "@/lib/demo-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function GuildDashboardPage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
+  if (!(await canManageGuild(guildId))) redirect("/dashboard");
+
+  const prisma = getPrisma();
+  const guild = await prisma.guild.findUnique({ where: { guildId } });
+  const latestMetric = await prisma.guildMetric.findFirst({ where: { guildId }, orderBy: { metricDate: "desc" } });
+  const latestReport = await prisma.report.findFirst({ where: { guildId }, orderBy: { createdAt: "desc" } });
+  const atRiskMembers = await prisma.memberProfile.count({ where: { guildId, trustScore: { lt: 45 }, deletedAt: null } });
   const stats: Array<[string, string, LucideIcon]> = [
-    ["서버 건강 점수", "76", BarChart3],
-    ["총 멤버 수", "1,240", Users],
-    ["활성 유저 수", "312", Users],
-    ["이탈 위험 유저", "28", AlertTriangle]
+    ["서버 건강 점수", String(latestMetric?.healthScore ?? latestReport?.healthScore ?? "-"), BarChart3],
+    ["총 멤버 수", String(latestMetric?.totalMembers ?? guild?.memberCount ?? "-"), Users],
+    ["활성 유저 수", String(latestMetric?.activeMembers ?? "-"), Users],
+    ["이탈 위험 유저", String(latestMetric?.atRiskMembers ?? atRiskMembers), AlertTriangle]
   ];
 
   return (
@@ -61,10 +73,10 @@ export default async function GuildDashboardPage({ params }: { params: Promise<{
             <CardTitle>성장 리포트</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>이번 주 서버 건강 점수는 76점입니다. 신규 유저 정착률과 질문 채널 응답 속도를 우선 개선하세요.</p>
+            <p>{latestReport?.aiSummary ?? "아직 생성된 리포트가 없습니다. 리포트 페이지에서 새 리포트를 생성하세요."}</p>
             <div className="flex gap-2">
-              <Badge>AI 요약 대기</Badge>
-              <Badge>fallback 가능</Badge>
+              <Badge>{latestReport?.aiProvider ?? "AI 대기"}</Badge>
+              <Badge>{latestReport?.fallbackUsed ? "fallback" : "cache 가능"}</Badge>
             </div>
           </CardContent>
         </Card>

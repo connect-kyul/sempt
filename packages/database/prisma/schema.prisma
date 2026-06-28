@@ -22,10 +22,18 @@ enum ReportPeriod {
 enum AuditAction {
   GUILD_CREATED
   SETTINGS_UPDATED
+  MEMBER_DELETE_REQUESTED
   MEMBER_DELETED
   WARNING_CREATED
   REPUTATION_CREATED
   REPORT_GENERATED
+}
+
+enum ReportJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 model Guild {
@@ -40,9 +48,11 @@ model Guild {
   metrics         GuildMetric[]
   members         MemberProfile[]
   reports         Report[]
+  reportJobs      ReportJob[]
   channelMetrics  ChannelMetric[]
   auditLogs       AuditLog[]
   aiGenerationLog AiGenerationLog[]
+  deletionRequests DataDeletionRequest[]
 }
 
 model GuildSettings {
@@ -55,6 +65,10 @@ model GuildSettings {
   autoModerationEnabled      Boolean  @default(false)
   aiEnabled                  Boolean  @default(true)
   allowRawMessageToLlm       Boolean  @default(false)
+  aiProvider                 String   @default("local")
+  localLlmProvider           String   @default("openai-compatible")
+  localLlmBaseUrl            String?
+  localLlmModel              String?
   activityWeight             Float    @default(0.4)
   reputationWeight           Float    @default(0.35)
   violationWeight            Float    @default(0.15)
@@ -162,6 +176,7 @@ model Report {
   period         ReportPeriod
   periodStart    DateTime
   periodEnd      DateTime
+  cacheKey       String
   healthScore    Int
   summary        String
   risks          Json
@@ -174,7 +189,38 @@ model Report {
   updatedAt      DateTime     @updatedAt
   guild          Guild        @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
 
+  @@unique([guildId, cacheKey])
   @@index([guildId, period, periodStart])
+}
+
+model ReportJob {
+  id           String          @id @default(cuid())
+  guildId      String
+  cacheKey     String
+  period       ReportPeriod
+  status       ReportJobStatus @default(QUEUED)
+  reportId     String?
+  errorMessage String?
+  createdBy    String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  guild        Guild           @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, status, createdAt])
+}
+
+model DataDeletionRequest {
+  id            String    @id @default(cuid())
+  guildId       String
+  userId        String
+  requestedById String
+  reason        String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  guild         Guild     @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, userId, createdAt])
 }
 
 model ChannelMetric {

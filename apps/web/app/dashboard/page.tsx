@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Server } from "lucide-react";
+import { auth, getManageableGuilds } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const guilds = [
-  { guildId: "demo-guild", name: "Sempt 데모 서버", health: 76, members: 1240, status: "관리 가능" }
-];
+export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.discordAccessToken) redirect("/api/auth/signin");
+  const guilds = await getManageableGuilds();
+
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -19,7 +23,7 @@ export default function DashboardPage() {
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {guilds.map((guild) => (
-          <Link key={guild.guildId} href={`/dashboard/${guild.guildId}`}>
+          <Link key={guild.id} href={`/dashboard/${guild.id}`}>
             <Card className="transition-colors hover:bg-secondary/40">
               <CardHeader className="flex-row items-center gap-3 space-y-0">
                 <Server className="h-5 w-5 text-primary" />
@@ -28,20 +32,28 @@ export default function DashboardPage() {
               <CardContent className="grid grid-cols-3 gap-3 text-sm">
                 <div>
                   <div className="text-muted-foreground">건강 점수</div>
-                  <div className="mt-1 text-2xl font-semibold">{guild.health}</div>
+                  <div className="mt-1 text-2xl font-semibold">-</div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">멤버</div>
-                  <div className="mt-1 text-2xl font-semibold">{guild.members}</div>
+                  <div className="mt-1 text-2xl font-semibold">-</div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">상태</div>
-                  <div className="mt-2">{guild.status}</div>
+                  <div className="mt-2">관리 가능</div>
                 </div>
               </CardContent>
             </Card>
           </Link>
         ))}
+        {guilds.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>관리 가능한 서버가 없습니다</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Discord에서 서버 관리 권한이 있는 계정으로 로그인했는지 확인하세요.</CardContent>
+          </Card>
+        ) : null}
       </div>
     </main>
   );
