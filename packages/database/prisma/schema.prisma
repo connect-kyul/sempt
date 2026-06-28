@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReputationEventType {
+  RECOMMENDATION
+  ADMIN_POSITIVE
+  CONTRIBUTION
+}
+
+enum ReportPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum AuditAction {
+  GUILD_CREATED
+  SETTINGS_UPDATED
+  MEMBER_DELETED
+  WARNING_CREATED
+  REPUTATION_CREATED
+  REPORT_GENERATED
+}
+
+model Guild {
+  id              String           @id @default(cuid())
+  guildId         String           @unique
+  name            String
+  memberCount     Int              @default(0)
+  joinedAt        DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  settings        GuildSettings?
+  metrics         GuildMetric[]
+  members         MemberProfile[]
+  reports         Report[]
+  channelMetrics  ChannelMetric[]
+  auditLogs       AuditLog[]
+  aiGenerationLog AiGenerationLog[]
+}
+
+model GuildSettings {
+  id                         String   @id @default(cuid())
+  guildId                    String   @unique
+  featureEnabled             Boolean  @default(true)
+  economyEnabled             Boolean  @default(true)
+  reputationEnabled          Boolean  @default(true)
+  trustScoreEnabled          Boolean  @default(true)
+  autoModerationEnabled      Boolean  @default(false)
+  aiEnabled                  Boolean  @default(true)
+  allowRawMessageToLlm       Boolean  @default(false)
+  activityWeight             Float    @default(0.4)
+  reputationWeight           Float    @default(0.35)
+  violationWeight            Float    @default(0.15)
+  accountStabilityWeight     Float    @default(0.1)
+  reportSchedule             String   @default("weekly")
+  adminNotificationChannelId String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  guild                      Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+}
+
+model GuildMetric {
+  id                       String   @id @default(cuid())
+  guildId                  String
+  metricDate               DateTime
+  healthScore              Int
+  totalMembers             Int
+  activeMembers            Int
+  newMembers               Int
+  atRiskMembers            Int
+  retainedNewMemberRate    Float    @default(0)
+  eventParticipationRate   Float    @default(0)
+  averageResponseHours     Float?
+  warningCount             Int      @default(0)
+  reportCount              Int      @default(0)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  guild                    Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, metricDate])
+}
+
+model MemberProfile {
+  id                 String              @id @default(cuid())
+  guildId            String
+  userId             String
+  displayNameHash    String?
+  activityScore      Int                 @default(0)
+  reputationScore    Int                 @default(50)
+  trustScore         Int                 @default(50)
+  warningCount       Int                 @default(0)
+  reportCount        Int                 @default(0)
+  messageCount       Int                 @default(0)
+  voiceMinutes       Int                 @default(0)
+  eventParticipations Int                @default(0)
+  answerContributions Int                @default(0)
+  attendanceDays     Int                 @default(0)
+  recentActiveDays   Int                 @default(0)
+  joinedAt           DateTime?
+  lastActiveAt       DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  guild              Guild               @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  activities         MemberActivity[]
+  reputationEvents   ReputationEvent[]
+  warnings           WarningEvent[]
+  voiceSessions      VoiceSession[]
+
+  @@unique([guildId, userId])
+  @@index([guildId, trustScore])
+}
+
+model MemberActivity {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  type      String
+  value     Int      @default(1)
+  occurredAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  member    MemberProfile @relation(fields: [guildId, userId], references: [guildId, userId], onDelete: Cascade)
+
+  @@index([guildId, userId, occurredAt])
+}
+
+model ReputationEvent {
+  id          String              @id @default(cuid())
+  guildId     String
+  userId      String
+  actorUserId String
+  type        ReputationEventType @default(RECOMMENDATION)
+  reason      String?
+  createdAt   DateTime            @default(now())
+  member      MemberProfile       @relation(fields: [guildId, userId], references: [guildId, userId], onDelete: Cascade)
+
+  @@index([guildId, userId, createdAt])
+}
+
+model WarningEvent {
+  id          String        @id @default(cuid())
+  guildId     String
+  userId      String
+  actorUserId String
+  reason      String?
+  createdAt   DateTime      @default(now())
+  member      MemberProfile @relation(fields: [guildId, userId], references: [guildId, userId], onDelete: Cascade)
+
+  @@index([guildId, userId, createdAt])
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  guildId        String
+  period         ReportPeriod
+  periodStart    DateTime
+  periodEnd      DateTime
+  healthScore    Int
+  summary        String
+  risks          Json
+  suggestions    Json
+  aiSummary      String?
+  aiProvider     String?
+  aiModel        String?
+  fallbackUsed   Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  guild          Guild        @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, period, periodStart])
+}
+
+model ChannelMetric {
+  id            String   @id @default(cuid())
+  guildId       String
+  channelId     String
+  channelName   String?
+  metricDate    DateTime
+  messageCount  Int      @default(0)
+  activeUsers   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  guild         Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, channelId, metricDate])
+  @@index([guildId, metricDate])
+}
+
+model VoiceSession {
+  id          String    @id @default(cuid())
+  guildId     String
+  userId      String
+  channelId   String
+  joinedAt    DateTime
+  leftAt      DateTime?
+  durationSec Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  member      MemberProfile @relation(fields: [guildId, userId], references: [guildId, userId], onDelete: Cascade)
+
+  @@index([guildId, userId, joinedAt])
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  guildId     String
+  actorUserId String?
+  action      AuditAction
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  guild       Guild       @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+}
+
+model AiGenerationLog {
+  id           String   @id @default(cuid())
+  guildId      String
+  provider     String
+  model        String?
+  promptKind   String
+  latencyMs    Int
+  success      Boolean
+  fallbackUsed Boolean  @default(false)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  guild        Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+}

@@ -1,0 +1,23 @@
+{
+  "name": "sempt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Discord community operations platform with local-first AI reports.",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @sempt/bot --filter @sempt/web dev",
+    "dev:bot": "pnpm --filter @sempt/bot dev",
+    "dev:web": "pnpm --filter @sempt/web dev",
+    "db:push": "pnpm --filter @sempt/database db:push",
+    "db:migrate": "pnpm --filter @sempt/database db:migrate",
+    "db:studio": "pnpm --filter @sempt/database db:studio",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck",
+    "build": "pnpm --recursive build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  }
+}

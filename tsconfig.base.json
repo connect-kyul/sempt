@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@sempt/ai": ["packages/ai/src/index.ts"],
+      "@sempt/config": ["packages/config/src/index.ts"],
+      "@sempt/database": ["packages/database/src/index.ts"],
+      "@sempt/shared": ["packages/shared/src/index.ts"]
+    }
+  }
+}
